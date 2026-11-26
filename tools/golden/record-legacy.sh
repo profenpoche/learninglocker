@@ -4,6 +4,11 @@
 #
 #   ./golden/record-legacy.sh               # → snapshots/latest/golden/<date>
 #   CHECK=1 ./golden/record-legacy.sh       # deux enregistrements + comparaison (contrôle du déterminisme)
+#   XAPI_IMAGE=xapi-service:v2026-d ./golden/record-legacy.sh
+#       candidat : xapi-service remplacé par cette image, enregistrement dans
+#       snapshots/<instantané>/candidates/, comparaison avec golden/latest ; la référence n'est pas touchée.
+#   CANDIDATE=nom ./golden/record-legacy.sh
+#       candidat sans changer d'image (ex. avec LEGACY_MONGO=4.4 exporté : pile legacy sur MongoDB 4.4).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -29,6 +34,23 @@ record() {
 
 start_presave
 STAMP=$(date -u +%Y%m%dT%H%MZ)
+
+if [[ -n "${XAPI_IMAGE:-}" || -n "${CANDIDATE:-}" ]]; then
+  # Candidat : remplacer éventuellement xapi-service, enregistrer, comparer, puis remettre la v7.1.2.
+  restore_xapi() { docker compose up -d xapi >/dev/null 2>&1 || true; docker rm -f ll-presave >/dev/null 2>&1 || true; }
+  trap restore_xapi EXIT
+  if [[ -n "${XAPI_IMAGE:-}" ]]; then
+    XAPI_IMAGE="$XAPI_IMAGE" docker compose -f docker-compose.yml -f docker-compose.xapi-v2026.yml up -d xapi >/dev/null
+  fi
+  NAME=${CANDIDATE:-$(echo "$XAPI_IMAGE" | tr ':/' '--')}
+  CAND=$SNAP/candidates/$NAME-$STAMP
+  mkdir -p "$(dirname "$CAND")"
+  record "$CAND"
+  echo "Candidat : $CAND"
+  node golden/diff.mjs "$OUT/latest" "$CAND" --accept golden/accepted.json ${DIFF_ARGS:-} || true
+  exit 0
+fi
+
 record "$OUT/$STAMP"
 if [[ "${CHECK:-0}" == 1 ]]; then
   record "$OUT/$STAMP-bis"

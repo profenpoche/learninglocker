@@ -17,10 +17,15 @@ x-ll: &ll
 
 services:
   mongo:
-    image: mongo:4.2
+    # LEGACY_MONGO=4.4 : nécessaire pour faire tourner xapi-service 2026 (driver MongoDB 7 : serveur ≥ 4.4).
+    image: mongo:${LEGACY_MONGO:-4.2}
     ports: ["127.0.0.1:27018:27017"]
     volumes: [mongo:/data/db]
     restart: unless-stopped
+    # Valeur recommandée par MongoDB (la limite Docker par défaut, 1024, provoque un WT_PANIC
+    # « Too many open files » dès que beaucoup de collections sont créées).
+    ulimits:
+      nofile: { soft: 64000, hard: 64000 }
 
   redis:
     image: redis:4-alpine

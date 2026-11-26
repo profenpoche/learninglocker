@@ -1,0 +1,11 @@
+# Surcharge : remplace xapi-service v7.1.2 par une image de la version 2026 dans la pile legacy,
+# pour comparer son comportement avec la référence golden (même base, même API Learning Locker).
+#
+#   XAPI_IMAGE=xapi-service:v2026-d docker compose -f docker-compose.yml -f docker-compose.xapi-v2026.yml up -d xapi
+#   docker compose up -d xapi        # retour à la v7.1.2
+services:
+  xapi:
+    image: ${XAPI_IMAGE:?XAPI_IMAGE obligatoire}
+    pull_policy: never
+    # L'image 2026 tourne en utilisateur non-root : le volume de stockage partagé appartient à root.
+    user: root

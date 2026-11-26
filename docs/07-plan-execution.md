@@ -165,6 +165,7 @@ Dans l'ordre :
 
 ### Lot 9 : migration des données et bascule (M)
 
+0. **Ordre imposé** : MongoDB doit être en 4.4 au moins avant de démarrer xapi-service 2026 (driver 7). Vérifier aussi que `MONGO_URL` n'utilise que `true`/`false` pour ses options booléennes.
 0. **Préalable (D1)** : versions, volume, options activées et `inventory.json` de la base de production. Comparer cet inventaire à celui du jeu de test (`compare.mjs`) : toute collection, index ou type de champ absent du jeu de test est ajouté au seed ou à `legacy-quirks.js` avant la première répétition.
 1. **Répétition à blanc** (au moins deux fois) : dump de la production (ou des données de référence) en 4.2, `mongorestore` vers MongoDB 8.0, `tools/verify-db` (volumes, index, types), migrations 2026, rejeu des golden, recette fonctionnelle.
 2. Configuration : reprise des `.env` existants ; seuls les chemins changent. Contrôle automatique : la nouvelle pile démarre avec l'ancien `.env` sans erreur et signale les variables inconnues ou ignorées.
@@ -263,8 +264,26 @@ Référence golden (`tools/golden`) :
 
 Ajouts prévus avec les lots suivants : services `mongo:8.0` et `redis:7` dans la CI (lot 5), supertest (lot 5), Playwright (lot 7). Les dossiers `apps/*` sont créés au début de chaque lot.
 
+| Lot | État | Détail |
+|---|---|---|
+| 2 | **En cours** (validation ADL) | Fork xapi-service, branche `v2026`, en 5 étapes, chacune validée par la suite mocha sur MongoDB 8.0 et Redis 7 jetables (`scripts/test-in-docker.sh`). A : `jscommons` intégré dans `src/commons/`. B : S3, Azure, Google, SQS, New Relic et CloudWatch retirés (D2) ; le démarrage échoue avec un message clair s'ils sont configurés. C : Node 24, TypeScript 6.0, npm, ESLint 10, Dockerfile multi-étapes non-root. D : mongodb 7.9, ioredis 6, express 4.22, winston 3, etc. ; `npm audit` à 0. E : arrêt propre, `GET /health`, garde-fous (`dropDatabase` et `AUTH_REPO=test` réservés aux bases `ll_test*`). Tests : 1 572 → 1 589 (17 nouveaux), 0 échec. |
+
+Résultats de validation du lot 2 :
+- **Golden** : avec xapi-service 2026 à la place de la v7.1.2 dans la pile legacy, les 745 cas sont identiques à la référence (dont les 89 cas xAPI). Le worker legacy traite normalement les statements écrits par le nouveau service (personas, cache du query builder, forwarding, voiding).
+- **Réponses HTTP** : statuts, en-têtes (dont les en-têtes de sécurité de helmet 3, reproduits à la main) et corps identiques à la v7.1.2.
+- **Écart accepté (D7)** : dans la syntaxe de requête alternative, une séquence `%` invalide est décodée en `\uFFFD` (query-string 10, correctif de sécurité).
+
+Constats importants pour la suite :
+- **Le driver MongoDB 7 exige MongoDB ≥ 4.4.** xapi-service 2026 ne peut pas tourner sur une base en 4.2 : la base doit être migrée avant ou en même temps que le service (lot 9). La pile legacy accepte MongoDB 4.4 sans écart (golden identique à 100 %) : `LEGACY_MONGO=4.4`.
+- **Options booléennes de `MONGO_URL`** : le driver 6+ n'accepte que `true`/`false` (pas `1`/`0`). À vérifier sur la configuration de production (lot 9).
+- **Limite de fichiers ouverts** : MongoDB en conteneur doit avoir `nofile` à 64 000 (sinon `WT_PANIC` sous charge). Le paquet officiel sous systemd le fait déjà.
+- **`EXPRESS_BODY_PARSER_LIMIT` n'est appliquée nulle part** par xapi-service : la taille des requêtes doit être limitée par nginx (`client_max_body_size`).
+- **Perte possible à l'arrêt brutal** (SIGKILL, OOM) : les statements insérés peuvent ne jamais être notifiés au worker. Piste : une « outbox » MongoDB rejouée au démarrage (à décider).
+- **CI du fork xapi-service** : les GitHub Actions sont désactivées par défaut sur un fork ; à activer dans l'onglet Actions du dépôt.
+
+
 ## 10. Prochaines actions
 
 1. Toi : décisions D1 à D8 toutes tranchées le 26/11/2026. En option : la redirection de port vers la VM (§2) pour ouvrir l'interface legacy dans ton navigateur, et un instantané de la VM dans Boxes maintenant que la référence est produite.
-2. Moi : lot 2 (xapi-service 2026).
+2. Moi : fin du lot 2 (suite de conformité ADL), puis lot 4 (bibliothèque partagée).
 3. Ensuite : lot 4 (bibliothèque partagée, validée contre `pipelines.json`), puis lots 5 et 6.
