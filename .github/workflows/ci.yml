@@ -1,0 +1,32 @@
+# Intégration continue de la version 2026 (branche v2026).
+# Le code d'origine (legacy/) n'est ni construit ni testé ici : sa CI était CircleCI (legacy/.circleci).
+name: CI
+
+on:
+  push:
+    branches: [v2026]
+  pull_request:
+    branches: [v2026]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - run: npm run check:tools

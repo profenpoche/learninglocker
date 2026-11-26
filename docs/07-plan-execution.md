@@ -96,7 +96,7 @@ Objectif : disposer de l'ancien système qui tourne, pour comparer chaque compor
 Lot traité en premier, car il est plus petit et valide d'emblée le chemin des données sur MongoDB 8.
 
 - Internaliser `jscommons` (erreurs, `checkScopes`, presenters, config, logger, `handleListen`) avec **les mêmes formats JSON et messages**.
-- TypeScript 5, Node 24, driver `mongodb` 6.x (`includeResultMetadata: true` sur les 26 appels concernés), ioredis 5, AWS SDK v3 à jour, express 4.21. Express 5 seulement après la validation complète.
+- TypeScript 6.0, Node 24, driver `mongodb` 7.x (dernière version au 26/11/2026 ; le retour de `findOneAndUpdate`/`findOneAndDelete` a changé depuis la 4.x : 26 appels concernés), ioredis 6, AWS SDK v3 à jour, express 4.21. Express 5 seulement après la validation complète.
 - Supprimer les dépendances mortes (`redis`, `node-fetch`, `install`, `google-auth-library`, `patch-package` et le patch GCS) ; épingler `object-hash` 2.x et `mime-types` 2.1.35 (contrats de données).
 - Arrêt propre (drainage, fermeture Mongo/Redis), route de santé, limite de taille des requêtes configurable, garde-fous contre `dropDatabase` hors base de test et `AUTH_REPO=test` en production.
 - Tests : suite mocha sur Mongo 8 + Redis 7 ; suite ADL **épinglée** ; golden du lot 1 ; test de non-régression du `hash` sur un échantillon de statements réels.
@@ -105,7 +105,7 @@ Lot traité en premier, car il est plus petit et valide d'emblée le chemin des 
 ### Lot 3 : monorepo et outillage (S)
 
 - Branche `v2026` : `packages/shared`, `apps/api`, `apps/worker`, `apps/cli`, `apps/web`, `deploy/`, `tools/`.
-- TypeScript 5 strict, ESLint 9 (flat config), Vitest pour les bibliothèques, supertest pour l'API, Playwright pour le front.
+- TypeScript 6.0 strict (version imposée par Angular 22 et typescript-eslint ; TypeScript 7 plus tard), ESLint 10 (flat config), Vitest 5 pour les bibliothèques, supertest pour l'API, Playwright pour le front.
 - CI GitHub Actions avec services `mongo:8.0` et `redis:7`. CircleCI est abandonné.
 
 ### Lot 4 : bibliothèque partagée `packages/shared` (M) — chemin critique
@@ -257,8 +257,14 @@ Référence golden (`tools/golden`) :
 
   Quand la version 2026 les corrige (D7), les cas concernés sont listés dans `golden/accepted.json`, passé à `diff.mjs --accept`.
 
+| Lot | État | Détail |
+|---|---|---|
+| 3 | **Fait** le 26/11/2026 | Branche `v2026` en monorepo npm (workspaces `packages/*`, `apps/*`). Code d'origine déplacé tel quel dans `legacy/` (exclu du lint, du typage et des tests). TypeScript 6.0 strict, ESLint 10, Vitest 5, Node 24 (`.nvmrc`). CI GitHub Actions : lint, typage, build, tests, syntaxe des outils. Premier module de `packages/shared` : encodage `&46;` (`encodeDot`, `decodeDot`, `mapDot`), 8 tests. `AGENTS.md` : consignes neutres vis-à-vis des agents de code. |
+
+Ajouts prévus avec les lots suivants : services `mongo:8.0` et `redis:7` dans la CI (lot 5), supertest (lot 5), Playwright (lot 7). Les dossiers `apps/*` sont créés au début de chaque lot.
+
 ## 10. Prochaines actions
 
 1. Toi : décisions D1 à D8 toutes tranchées le 26/11/2026. En option : la redirection de port vers la VM (§2) pour ouvrir l'interface legacy dans ton navigateur, et un instantané de la VM dans Boxes maintenant que la référence est produite.
-2. Moi : lot 3 (branche `v2026`, monorepo et outillage) et lot 2 (xapi-service 2026), qui peuvent avancer en parallèle.
+2. Moi : lot 2 (xapi-service 2026).
 3. Ensuite : lot 4 (bibliothèque partagée, validée contre `pipelines.json`), puis lots 5 et 6.

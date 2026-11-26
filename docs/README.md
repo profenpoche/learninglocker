@@ -1,6 +1,6 @@
 # Documentation technique de Learning Locker v2
 
-Documentation du code de ce dépôt (commit `5fec948a`, novembre 2021), rédigée pour préparer une version « 2026 ». Cette version vise une compatibilité totale des données et de la configuration, un nouveau front Angular, Node.js et MongoDB à jour, et un déploiement sur Ubuntu Server LTS.
+Documentation du code de ce dépôt (commit `5fec948a`, novembre 2021 ; sur la branche `v2026`, ce code se trouve sous `legacy/` et les chemins cités ici s'y rapportent), rédigée pour préparer une version « 2026 ». Cette version vise une compatibilité totale des données et de la configuration, un nouveau front Angular, Node.js et MongoDB à jour, et un déploiement sur Ubuntu Server LTS.
 
 ## Sommaire
 

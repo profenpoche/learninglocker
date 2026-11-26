@@ -79,8 +79,9 @@ const TYPE_ASSIGNMENT = 'http://id.tincanapi.com/activitytype/school-assignment'
 const TYPE_PROFILE = 'http://adlnet.gov/expapi/activities/profile';
 
 // ---------------------------------------------------------------------------
-// Construction des acteurs et activités
-export function buildWorld(rng) {
+// Construction des acteurs et activités. Le monde est fixe (aucun tirage aléatoire) : le paramètre
+// est conservé pour la compatibilité des appels existants.
+export function buildWorld(_rng) {
   const learners = [];
   for (let i = 1; i <= 60; i += 1) {
     const prenom = PRENOMS[(i * 7) % PRENOMS.length];

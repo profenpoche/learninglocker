@@ -10,7 +10,12 @@ backend TypeScript, déploiement Ubuntu Server LTS. Exigence centrale : **compat
 données et de la configuration** avec les instances existantes.
 
 - `master` : code Learning Locker d'origine, **référence intacte**. On n'y développe pas.
-- `v2026` : tout le travail de migration (monorepo à venir, lot 3).
+- `v2026` : tout le travail de migration. Monorepo npm :
+  - `packages/shared` : code commun (formats de données, pipelines d'agrégation) ;
+  - `apps/` : API, worker, CLI, front Angular, ajoutés au fil des lots ;
+  - `legacy/` : copie du code d'origine, pour le lire pendant le portage. Ne jamais la modifier ;
+    elle est exclue du lint, du typage et des tests. Les chemins cités dans `docs/` (`api/src/…`,
+    `lib/…`, `ui/src/…`) se trouvent sous `legacy/` sur cette branche.
 - Le service xAPI (`/data/xAPI`) est un projet séparé : fork `profenpoche/learninglocker-xapi-service`.
 
 ## Où lire
@@ -25,6 +30,21 @@ données et de la configuration** avec les instances existantes.
 | Vérification de base avant/après migration | `tools/verify-db/` (`inventory.js`, `compare.mjs`) |
 | Pile legacy en conteneurs, provisionnement Ubuntu | `deploy/legacy/`, `deploy/provision.sh` |
 
+## Commandes
+
+Node 24 (`.nvmrc`), npm workspaces :
+
+```bash
+npm ci
+npm run check        # tout ce que la CI vérifie : lint, typage, tests, syntaxe des outils
+npm test             # Vitest, tous les paquets
+npm run build
+```
+
+Pile technique : TypeScript 6.0 strict (version imposée par Angular 22 et typescript-eslint ;
+TypeScript 7 attendra leur prise en charge), ESLint 10 (configuration « flat »), Vitest 5.
+CI : `.github/workflows/ci.yml` (GitHub Actions).
+
 ## Règles
 
 - **Ne jamais changer un format de données ou de configuration** sans l'avoir vérifié dans `docs/02`, `docs/03` et `docs/04` : noms de collections, champs JSON stockés en chaîne, opérateurs `$oid`/`$dte`/`$personaIdent`, encodage `&46;`, bcrypt, JWT HS256 avec `APP_SECRET`, noms de files, variables d'environnement.
@@ -33,7 +53,10 @@ données et de la configuration** avec les instances existantes.
 - Commits : [Conventional Commits](https://www.conventionalcommits.org) (`.commitlintrc.json`), par exemple `feat(api): …`, `docs: …`.
 - Documentation en français. Langage simple, phrases courtes.
 - Ne pas commiter de données : instantanés, dumps, enregistrements golden (ils vivent sur la VM, voir plus bas). Les secrets présents dans `deploy/legacy/*.env` sont des valeurs de test, jamais à réutiliser.
-- Outils `tools/` : Node ≥ 22 (fetch, `AbortSignal.timeout`). Le `.nvmrc` (Node 10) concerne le code legacy de `master`.
+- Code nouveau : TypeScript strict, tests Vitest à côté du code (`*.test.ts`). Chaque portage cite le
+  fichier d'origine sous `legacy/` en commentaire d'en-tête.
+- Outils `tools/` : JavaScript (ESM) exécuté sur la VM ou dans l'image legacy ; `npm run check:tools`
+  en vérifie la syntaxe. Le code legacy (`legacy/`) se construit avec Node 10, uniquement en conteneur.
 
 ## Environnement de travail (VM)
 

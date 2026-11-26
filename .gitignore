@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
+# Données générées (instantanés, enregistrements golden) : elles vivent sur la VM, pas dans le dépôt.
+snapshots/
+seed-out/
+golden-out/

@@ -1,4 +1,3 @@
-/* eslint-disable */
 // Service HTTP exécuté DANS l'image legacy (Node 10 + babel-node), pour que le
 // générateur de données produise exactement les mêmes documents que le front
 // React : il appelle le vrai code de ui/src (buildModel des modèles de

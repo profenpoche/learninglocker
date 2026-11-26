@@ -1,0 +1,19 @@
+{
+  "name": "@ll/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Code commun à l'API, au worker et au front : formats de données, pipelines d'agrégation, requêtes",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

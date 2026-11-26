@@ -1,0 +1,31 @@
+{
+  "name": "learninglocker-2026",
+  "private": true,
+  "description": "Learning Locker v2, version 2026 : Node 24, MongoDB 8, front Angular, compatibilité totale des données et de la configuration",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check:tools": "node tools/check-syntax.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run check:tools"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.4",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0",
+    "vitest": "^5.1.2"
+  }
+}
