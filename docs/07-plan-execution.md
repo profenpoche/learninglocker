@@ -266,9 +266,10 @@ Ajouts prévus avec les lots suivants : services `mongo:8.0` et `redis:7` dans l
 
 | Lot | État | Détail |
 |---|---|---|
-| 2 | **En cours** (validation ADL) | Fork xapi-service, branche `v2026`, en 5 étapes, chacune validée par la suite mocha sur MongoDB 8.0 et Redis 7 jetables (`scripts/test-in-docker.sh`). A : `jscommons` intégré dans `src/commons/`. B : S3, Azure, Google, SQS, New Relic et CloudWatch retirés (D2) ; le démarrage échoue avec un message clair s'ils sont configurés. C : Node 24, TypeScript 6.0, npm, ESLint 10, Dockerfile multi-étapes non-root. D : mongodb 7.9, ioredis 6, express 4.22, winston 3, etc. ; `npm audit` à 0. E : arrêt propre, `GET /health`, garde-fous (`dropDatabase` et `AUTH_REPO=test` réservés aux bases `ll_test*`). Tests : 1 572 → 1 589 (17 nouveaux), 0 échec. |
+| 2 | **Fait** le 26/11/2026 (jalon J2) | Fork xapi-service, branche `v2026`, en 5 étapes, chacune validée par la suite mocha sur MongoDB 8.0 et Redis 7 jetables (`scripts/test-in-docker.sh`). A : `jscommons` intégré dans `src/commons/`. B : S3, Azure, Google, SQS, New Relic et CloudWatch retirés (D2) ; le démarrage échoue avec un message clair s'ils sont configurés. C : Node 24, TypeScript 6.0, npm, ESLint 10, Dockerfile multi-étapes non-root. D : mongodb 7.9, ioredis 6, express 4.22, winston 3, etc. ; `npm audit` à 0. E : arrêt propre, `GET /health`, garde-fous (`dropDatabase` et `AUTH_REPO=test` réservés aux bases `ll_test*`). Tests : 1 572 → 1 589 (17 nouveaux), 0 échec. |
 
 Résultats de validation du lot 2 :
+- **Conformité ADL** (xAPI 1.0.3, suite épinglée au commit `5bc232d`) : 1 365/1 365 pour la v7.1.2 comme pour la version 2026 (`scripts/conformance-in-docker.sh` du fork).
 - **Golden** : avec xapi-service 2026 à la place de la v7.1.2 dans la pile legacy, les 745 cas sont identiques à la référence (dont les 89 cas xAPI). Le worker legacy traite normalement les statements écrits par le nouveau service (personas, cache du query builder, forwarding, voiding).
 - **Réponses HTTP** : statuts, en-têtes (dont les en-têtes de sécurité de helmet 3, reproduits à la main) et corps identiques à la v7.1.2.
 - **Écart accepté (D7)** : dans la syntaxe de requête alternative, une séquence `%` invalide est décodée en `\uFFFD` (query-string 10, correctif de sécurité).
@@ -285,5 +286,5 @@ Constats importants pour la suite :
 ## 10. Prochaines actions
 
 1. Toi : décisions D1 à D8 toutes tranchées le 26/11/2026. En option : la redirection de port vers la VM (§2) pour ouvrir l'interface legacy dans ton navigateur, et un instantané de la VM dans Boxes maintenant que la référence est produite.
-2. Moi : fin du lot 2 (suite de conformité ADL), puis lot 4 (bibliothèque partagée).
+2. Moi : lot 4 (bibliothèque partagée `packages/shared`), validé contre `pipelines.json`.
 3. Ensuite : lot 4 (bibliothèque partagée, validée contre `pipelines.json`), puis lots 5 et 6.
