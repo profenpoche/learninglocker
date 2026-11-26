@@ -1,0 +1,80 @@
+# Pile de référence « legacy » : Learning Locker v2 + xapi-service v7.1.2
+# sur MongoDB 4.2 et Redis 4, comme en production 2021.
+# Accès : http://<vm>:18080 ; Mongo legacy sur 127.0.0.1:27018, Redis sur 127.0.0.1:6380.
+#
+# Sources attendues à côté de ce fichier :
+#   ./src/learninglocker   (git archive de profenpoche/learninglocker master)
+#   ./src/xapi-service     (git archive de profenpoche/learninglocker-xapi-service master)
+name: ll-legacy
+
+x-ll: &ll
+  image: ll-legacy/learninglocker:master
+  env_file: ll.env
+  volumes:
+    - storage:/data
+  depends_on: [mongo, redis]
+  restart: unless-stopped
+
+services:
+  mongo:
+    image: mongo:4.2
+    ports: ["127.0.0.1:27018:27017"]
+    volumes: [mongo:/data/db]
+    restart: unless-stopped
+
+  redis:
+    image: redis:4-alpine
+    ports: ["127.0.0.1:6380:6379"]
+    restart: unless-stopped
+
+  api:
+    <<: *ll
+    build:
+      context: ./src/learninglocker
+      dockerfile: ../../ll.Dockerfile
+    command: ["node", "api/dist/server"]
+
+  ui:
+    <<: *ll
+    command: ["node", "ui/dist/server"]
+    depends_on: [api]
+
+  worker:
+    <<: *ll
+    command: ["node", "worker/dist/server"]
+
+  scheduler:
+    <<: *ll
+    command: ["node", "cli/dist/scheduler"]
+
+  xapi:
+    image: ll-legacy/xapi-service:v7.1.2
+    build:
+      context: ./src/xapi-service
+      dockerfile: ../../xapi.Dockerfile
+    env_file: xapi.env
+    volumes:
+      - storage:/data
+    depends_on: [mongo, redis]
+    restart: unless-stopped
+
+  echo:
+    image: node:24-alpine
+    command: ["node", "/app/echo-server.mjs"]
+    volumes:
+      - ./echo-server.mjs:/app/echo-server.mjs:ro
+      - echo:/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.24-alpine
+    ports: ["18080:80"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [api, ui, xapi]
+    restart: unless-stopped
+
+volumes:
+  mongo:
+  storage:
+  echo:
