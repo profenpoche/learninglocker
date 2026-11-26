@@ -120,7 +120,7 @@ Trois options :
 - Node 16, TypeScript 4.3, Express 4, driver `mongodb` ^4.10 (officiellement supporté jusqu'à MongoDB 6.0 environ), ioredis 4, `@aws-sdk/client-s3` v3 ;
 - `.env.example` : `MONGO_URL` d'exemple avec `replicaSet=rs0` (à vérifier : un replica set est-il requis ?), `REDIS_PREFIX`, `EVENTS_REPO` (`redis` ou `sqs`), `QUEUE_NAMESPACE`, `ENABLE_QUEUE_PRIORITY`.
 
-**Fork :** `profenpoche/learninglocker-xapi-service`, documenté dans son dossier `docs/`.
+**Fork :** `profenpoche/learninglocker-xapi-service`, documenté dans son dossier `docs/` (branche `v2026`).
 
 Partir du tag qui correspond à la version déployée, ou de `v7.1.2` à défaut. La montée de version est plus légère que pour ce dépôt : driver Mongo et SDK AWS sont déjà dans des versions modernes.
 

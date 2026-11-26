@@ -16,7 +16,7 @@ Documentation du code de ce dépôt (commit `5fec948a`, novembre 2021), rédigé
 
 ## Documentation associée
 
-xapi-service (fork `profenpoche/learninglocker-xapi-service`) est documenté dans son propre dépôt, dossier `docs/`.
+xapi-service (fork `profenpoche/learninglocker-xapi-service`) est documenté dans son propre dépôt, branche `v2026`, dossier `docs/`.
 
 ## Les points à retenir
 
