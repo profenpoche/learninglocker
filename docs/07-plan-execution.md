@@ -112,7 +112,7 @@ Lot traité en premier, car il est plus petit et valide d'emblée le chemin des 
 
 Contenu (cf. 06 §5.2) : construction des pipelines de visualisation, `periodToDate`, `update$dteTimezone`, `parseQuery` (côté serveur), modèle du query builder, mappers des champs sérialisés, calcul des scopes de rôle, validation des mots de passe et des IFI.
 
-- **Tests différentiels** : l'ancien code JS (`ui/src/utils/visualisations/**`, `lib/helpers/**`) est transpilé avec esbuild dans un harnais de test. Les mêmes entrées passent dans l'ancien et le nouveau code, qui doivent produire des sorties identiques. Entrées : toutes les visualisations des données de référence, plus des cas générés.
+- **Tests différentiels** : les sorties de référence sont calculées par le vrai code legacy, dans son image d'origine (service presave : babel 6, Immutable 3.8, moment 2.24), puis enregistrées en fixtures compressées (`tools/oracle/`). Le nouveau code doit produire des sorties identiques. Entrées : toutes les visualisations des données de référence, plus des cas générés. (Plus fidèle qu'une transpilation esbuild de l'ancien code, et sans dépendances de 2021 dans la CI.)
 - Les specs jest existantes sont portées comme oracles.
 - **Critère :** 100 % d'identité sur les pipelines générés pour toutes les visualisations des données de référence.
 
@@ -261,6 +261,11 @@ Référence golden (`tools/golden`) :
 | Lot | État | Détail |
 |---|---|---|
 | 3 | **Fait** le 26/11/2026 | Branche `v2026` en monorepo npm (workspaces `packages/*`, `apps/*`). Code d'origine déplacé tel quel dans `legacy/` (exclu du lint, du typage et des tests). TypeScript 6.0 strict, ESLint 10, Vitest 5, Node 24 (`.nvmrc`). CI GitHub Actions : lint, typage, build, tests, syntaxe des outils. Premier module de `packages/shared` : encodage `&46;` (`encodeDot`, `decodeDot`, `mapDot`), 8 tests. `AGENTS.md` : consignes neutres vis-à-vis des agents de code. |
+| 4 | **En cours** : pipelines faits (jalon J3) | Construction des pipelines de visualisation portée dans `packages/shared` (`buildVisualisationPipelines`, `pipelinesFromQueries`, `reviveVisualisation`, `periodToDate`, `update$dteTimezone`…), sans Immutable, date courante en paramètre. **14 327 cas d'oracle identiques sur 14 327** (chaîne JSON exacte, ordre des clés compris ; 507 cas où le front d'origine échoue, le portage échoue aussi). Specs legacy portées. Reste : `parseQuery` côté serveur, modèle du query builder, sérialisation des champs, scopes des rôles, validation des mots de passe et des IFI. |
+
+Constats du lot 4 :
+- **Bizarreries legacy reproduites** (identité exigée, car pendant une transition le front React et l'API 2026 doivent calculer les mêmes pipelines pour les dashboards partagés) : ordre des clés d'une Map Immutable de plus de 8 clés (ordre du hash), fuseau `+05:30` traité comme UTC pour `TODAY` et les `$dte`, fenêtre vide du benchmark `TODAY`, valeur par défaut `'statement'` de Correlation, etc. Liste dans les en-têtes des fichiers de `packages/shared/src/visualisations/`.
+- **Données de fuseaux horaires** : le portage utilise des données récentes (tz 2026f, `moment-timezone` 0.6) ; le legacy, celles de 2019. Pour 48 fuseaux dont les règles ont changé (Mexico, Le Caire, Santiago, Téhéran…), les pipelines `TODAY`/`$dte` diffèrent du legacy : la nouvelle valeur est la bonne. Conséquence en transition : un dashboard partagé dans l'un de ces fuseaux, affiché par le front React, pourrait être refusé par l'API 2026.
 
 Ajouts prévus avec les lots suivants : services `mongo:8.0` et `redis:7` dans la CI (lot 5), supertest (lot 5), Playwright (lot 7). Les dossiers `apps/*` sont créés au début de chaque lot.
 

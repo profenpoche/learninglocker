@@ -27,6 +27,7 @@ données et de la configuration** avec les instances existantes.
 | Plan, **décisions D1–D8 (tranchées)**, lots, avancement | `docs/07-plan-execution.md` (§3 et §9) |
 | Jeu de données de test | `tools/seed/README.md` |
 | Tests de contrat « golden » | `tools/golden/README.md` |
+| Oracle des pipelines de visualisation (référence du lot 4) | `tools/oracle/pipelines.mjs` (en-tête), fixtures `packages/shared/test/fixtures/` |
 | Vérification de base avant/après migration | `tools/verify-db/` (`inventory.js`, `compare.mjs`) |
 | Pile legacy en conteneurs, provisionnement Ubuntu | `deploy/legacy/`, `deploy/provision.sh` |
 
@@ -52,7 +53,7 @@ CI : `.github/workflows/ci.yml` (GitHub Actions).
 - Les pipelines d'agrégation doivent être identiques à ceux du front React : référence `pipelines.json` de l'enregistrement golden.
 - Commits : [Conventional Commits](https://www.conventionalcommits.org) (`.commitlintrc.json`), par exemple `feat(api): …`, `docs: …`.
 - Documentation en français. Langage simple, phrases courtes.
-- Ne pas commiter de données : instantanés, dumps, enregistrements golden (ils vivent sur la VM, voir plus bas). Les secrets présents dans `deploy/legacy/*.env` sont des valeurs de test, jamais à réutiliser.
+- Ne pas commiter de données : instantanés, dumps, enregistrements golden (ils vivent sur la VM, voir plus bas). Exception : les fixtures de test compressées produites par un générateur versionné (ex. `packages/shared/test/fixtures/`, générées par `tools/oracle/`). Les secrets présents dans `deploy/legacy/*.env` sont des valeurs de test, jamais à réutiliser.
 - Code nouveau : TypeScript strict, tests Vitest à côté du code (`*.test.ts`). Chaque portage cite le
   fichier d'origine sous `legacy/` en commentaire d'en-tête.
 - Outils `tools/` : JavaScript (ESM) exécuté sur la VM ou dans l'image legacy ; `npm run check:tools`
@@ -66,7 +67,7 @@ VM Ubuntu Server 24.04 sous GNOME Boxes, provisionnée par `deploy/provision.sh`
 - **Fermer Boxes arrête la VM.** La fenêtre doit rester ouverte (réduite si besoin).
 - La redirection du port SSH est ajoutée à chaud et **disparaît à chaque redémarrage de la VM**. Pour la remettre (sur l'hôte) :
   `flatpak run --command=virsh org.gnome.Boxes -c qemu:///session qemu-monitor-command ubuntu24.04- --hmp 'hostfwd_add hostnet0 tcp:127.0.0.1:2222-:22'`
-- Pile legacy dans `~/legacy` (copies de `deploy/legacy/`, `tools/seed/` → `seed/`, `tools/golden/` → `golden/`, `tools/verify-db/` → `verify-db/`). nginx legacy sur le port 18080 de la VM, MongoDB 4.2 sur 27018, Redis 4 sur 6380. MongoDB 8.0 et Redis 7 de la cible sur les ports standard.
+- Pile legacy dans `~/legacy` (copies de `deploy/legacy/`, `tools/seed/` → `seed/`, `tools/golden/` → `golden/`, `tools/verify-db/` → `verify-db/`, `tools/oracle/` → `oracle/`). nginx legacy sur le port 18080 de la VM, MongoDB 4.2 sur 27018, Redis 4 sur 6380. MongoDB 8.0 et Redis 7 de la cible sur les ports standard.
 - Instantané de référence : `~/legacy/snapshots/latest` (dump, fichiers, manifeste, inventaire) ; référence golden : `~/legacy/snapshots/latest/golden/latest`.
 - Après modification d'un fichier de `tools/` ou `deploy/legacy/`, recopier la version locale sur la VM : les deux doivent rester identiques.
 
@@ -78,6 +79,7 @@ STATEMENTS=500 ./seed/launch-detached.sh  # passe courte (≈ 3 min) pour valide
 ./seed/launch-detached.sh stop
 ./golden/restore-legacy.sh                # remet la pile dans l'état de l'instantané
 CHECK=1 ./golden/record-legacy.sh         # refait la référence golden et contrôle son déterminisme
+./oracle/pipelines.sh                     # régénère l'oracle des pipelines (≈ 3 min, conteneur ll-presave-oracle sur 18091)
 ```
 
 ## Pièges connus
@@ -87,3 +89,4 @@ CHECK=1 ./golden/record-legacy.sh         # refait la référence golden et cont
 - `commande | tail` masque le code de sortie de `commande` : afficher `rc=$?` avant le filtre.
 - Le worker legacy traite 300 à 1 200 statements par minute (MongoDB est le goulot) et continue d'écrire quelques minutes après : attendre une base stable avant tout instantané.
 - Les routes legacy `/api/v2/<modèle>/:id/shallow` ne répondent jamais : toujours un délai maximal côté client.
+- `moment(chaîne)` et `moment.parseZone(chaîne)` lisent une date sans décalage dans le fuseau **local du processus** (UTC dans les conteneurs legacy, souvent autre chose sur l'hôte). Le code porté lit en UTC (`moment.utc`) ; lancer les tests avec plusieurs `TZ=` pour le vérifier.
