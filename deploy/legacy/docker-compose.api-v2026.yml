@@ -1,0 +1,28 @@
+# Surcharge : remplace l'API Learning Locker par une image de la version 2026 (méthode « strangler »).
+# La nouvelle API traite les routes déjà portées et relaie les autres vers l'ancienne API, qui tourne
+# à côté sous le nom api-legacy. Les jetons JWT sont compatibles (même APP_SECRET, même ll.env).
+#
+#   API_IMAGE=ll-api:v2026 docker compose -f docker-compose.yml -f docker-compose.api-v2026.yml up -d api api-legacy
+#   docker compose up -d --remove-orphans api     # retour à l'API legacy seule
+#
+# La configuration est la même que celle de l'API legacy (ll.env) : c'est aussi un test de compatibilité.
+services:
+  api:
+    image: ${API_IMAGE:?API_IMAGE obligatoire}
+    pull_policy: never
+    build: !reset null
+    command: !reset null
+    environment:
+      LEGACY_API_URL: http://api-legacy:8080
+    # Le volume de stockage partagé appartient à root (écrit par les conteneurs legacy).
+    user: root
+    depends_on: [mongo, redis, api-legacy]
+
+  api-legacy:
+    image: ll-legacy/learninglocker:master
+    env_file: ll.env
+    volumes:
+      - storage:/data
+    command: ["node", "api/dist/server"]
+    depends_on: [mongo, redis]
+    restart: unless-stopped

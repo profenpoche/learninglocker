@@ -7,6 +7,9 @@
 #   XAPI_IMAGE=xapi-service:v2026-d ./golden/record-legacy.sh
 #       candidat : xapi-service remplacé par cette image, enregistrement dans
 #       snapshots/<instantané>/candidates/, comparaison avec golden/latest ; la référence n'est pas touchée.
+#   API_IMAGE=ll-api:v2026 ./golden/record-legacy.sh
+#       candidat : API Learning Locker 2026 (les routes non portées sont relayées vers api-legacy).
+#       Nécessite LEGACY_MONGO=4.4 exporté (Mongoose 9 / driver 7 : serveur ≥ 4.4).
 #   CANDIDATE=nom ./golden/record-legacy.sh
 #       candidat sans changer d'image (ex. avec LEGACY_MONGO=4.4 exporté : pile legacy sur MongoDB 4.4).
 set -euo pipefail
@@ -35,14 +38,20 @@ record() {
 start_presave
 STAMP=$(date -u +%Y%m%dT%H%MZ)
 
-if [[ -n "${XAPI_IMAGE:-}" || -n "${CANDIDATE:-}" ]]; then
-  # Candidat : remplacer éventuellement xapi-service, enregistrer, comparer, puis remettre la v7.1.2.
-  restore_xapi() { docker compose up -d xapi >/dev/null 2>&1 || true; docker rm -f ll-presave >/dev/null 2>&1 || true; }
-  trap restore_xapi EXIT
+if [[ -n "${XAPI_IMAGE:-}" || -n "${API_IMAGE:-}" || -n "${CANDIDATE:-}" ]]; then
+  # Candidat : remplacer xapi-service et/ou l'API, enregistrer, comparer, puis remettre les images legacy.
+  restore_images() {
+    docker compose up -d --remove-orphans api xapi >/dev/null 2>&1 || true
+    docker rm -f ll-presave >/dev/null 2>&1 || true
+  }
+  trap restore_images EXIT
   if [[ -n "${XAPI_IMAGE:-}" ]]; then
     XAPI_IMAGE="$XAPI_IMAGE" docker compose -f docker-compose.yml -f docker-compose.xapi-v2026.yml up -d xapi >/dev/null
   fi
-  NAME=${CANDIDATE:-$(echo "$XAPI_IMAGE" | tr ':/' '--')}
+  if [[ -n "${API_IMAGE:-}" ]]; then
+    API_IMAGE="$API_IMAGE" docker compose -f docker-compose.yml -f docker-compose.api-v2026.yml up -d api api-legacy >/dev/null
+  fi
+  NAME=${CANDIDATE:-$(echo "${API_IMAGE:-$XAPI_IMAGE}" | tr ':/' '--')}
   CAND=$SNAP/candidates/$NAME-$STAMP
   mkdir -p "$(dirname "$CAND")"
   record "$CAND"

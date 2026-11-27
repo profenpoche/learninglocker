@@ -14,6 +14,7 @@ MONGO=mongodb://127.0.0.1:27018/learninglocker_v2
 
 echo "==> Arrêt des services applicatifs"
 docker compose stop nginx ui api xapi worker scheduler >/dev/null
+docker stop ll-legacy-api-legacy-1 >/dev/null 2>&1 || true   # API legacy relayée (candidat API 2026)
 docker compose up -d mongo redis echo >/dev/null
 until docker compose exec -T mongo mongo --quiet --eval 'db.runCommand({ping:1}).ok' >/dev/null 2>&1; do sleep 1; done
 
@@ -27,6 +28,7 @@ docker run --rm -v ll-legacy_storage:/data -v "$PWD/$SNAP:/in:ro" alpine sh -c '
 docker compose exec -T echo sh -c ': > /data/forwarded.ndjson'
 
 echo "==> Redémarrage"
+docker start ll-legacy-api-legacy-1 >/dev/null 2>&1 || true
 docker compose start scheduler worker xapi api ui nginx >/dev/null
 for url in http://127.0.0.1:18080/api http://127.0.0.1:18080/data/xAPI/about http://127.0.0.1:18080/login; do
   until curl -fs -o /dev/null "$url"; do sleep 1; done
