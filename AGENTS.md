@@ -27,7 +27,7 @@ données et de la configuration** avec les instances existantes.
 | Plan, **décisions D1–D8 (tranchées)**, lots, avancement | `docs/07-plan-execution.md` (§3 et §9) |
 | Jeu de données de test | `tools/seed/README.md` |
 | Tests de contrat « golden » | `tools/golden/README.md` |
-| Oracle des pipelines de visualisation (référence du lot 4) | `tools/oracle/pipelines.mjs` (en-tête), fixtures `packages/shared/test/fixtures/` |
+| Oracles du lot 4 (code commun comparé au vrai code legacy) | `tools/oracle/pipelines.mjs` (pipelines de visualisation), `tools/oracle/libs.mjs` et `tools/oracle/legacy/lib-oracle-server.js` (parseQuery, scopes, validation, schémas du front, query builder) ; fixtures `packages/shared/test/fixtures/` |
 | Vérification de base avant/après migration | `tools/verify-db/` (`inventory.js`, `compare.mjs`) |
 | Pile legacy en conteneurs, provisionnement Ubuntu | `deploy/legacy/`, `deploy/provision.sh` |
 
@@ -80,6 +80,7 @@ STATEMENTS=500 ./seed/launch-detached.sh  # passe courte (≈ 3 min) pour valide
 ./golden/restore-legacy.sh                # remet la pile dans l'état de l'instantané
 CHECK=1 ./golden/record-legacy.sh         # refait la référence golden et contrôle son déterminisme
 ./oracle/pipelines.sh                     # régénère l'oracle des pipelines (≈ 3 min, conteneur ll-presave-oracle sur 18091)
+./oracle/libs.sh                          # régénère les autres oracles du lot 4 (≈ 1 min, conteneur ll-lib-oracle sur 18092, sans accès à la base)
 ```
 
 ## Pièges connus
@@ -89,4 +90,5 @@ CHECK=1 ./golden/record-legacy.sh         # refait la référence golden et cont
 - `commande | tail` masque le code de sortie de `commande` : afficher `rc=$?` avant le filtre.
 - Le worker legacy traite 300 à 1 200 statements par minute (MongoDB est le goulot) et continue d'écrire quelques minutes après : attendre une base stable avant tout instantané.
 - Les routes legacy `/api/v2/<modèle>/:id/shallow` ne répondent jamais : toujours un délai maximal côté client.
-- `moment(chaîne)` et `moment.parseZone(chaîne)` lisent une date sans décalage dans le fuseau **local du processus** (UTC dans les conteneurs legacy, souvent autre chose sur l'hôte). Le code porté lit en UTC (`moment.utc`) ; lancer les tests avec plusieurs `TZ=` pour le vérifier.
+- Le code legacy s'exécute **transpilé par Babel 6** (preset `env`, `transform-runtime`) : `{...a, k: v}` y devient `Object.assign` (une clé `__proto__` change le prototype), `[...x]` devient `Array.from(x)` pour un non-tableau. Un portage « à l'identique » doit suivre cette sémantique, pas celle du source.
+- `new Date(chaîne)`, `moment(chaîne)` et `moment.parseZone(chaîne)` lisent une date sans décalage dans le fuseau **local du processus** (UTC dans les conteneurs legacy, souvent autre chose sur l'hôte). Le code porté lit en UTC (`moment.utc`) ; lancer les tests avec plusieurs `TZ=` pour le vérifier.

@@ -38,7 +38,7 @@ export const isList = (value: unknown): value is unknown[] => Array.isArray(valu
 // smi() et hashString() d'Immutable 3.8.2 (hash « JVM » des chaînes).
 const smi = (i32: number): number => ((i32 >>> 1) & 0x40000000) | (i32 & 0xbfffffff);
 
-const hashString = (value: string): number => {
+export const hashString = (value: string): number => {
   let hash = 0;
   for (let i = 0; i < value.length; i += 1) {
     hash = (31 * hash + value.charCodeAt(i)) | 0;
@@ -121,6 +121,10 @@ export const markRaw = (value: object): void => {
  */
 export const toJS = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map((item: unknown) => toJS(item));
+  // Autres collections émulées (Set…) : méthode toJS, comme Immutable.
+  if (value !== null && typeof value === 'object' && !isPlainObject(value) && typeof (value as { toJS?: unknown }).toJS === 'function') {
+    return (value as { toJS: () => unknown }).toJS();
+  }
   if (isMap(value)) {
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(value)) {

@@ -31,7 +31,7 @@ export default tseslint.config(
   },
   {
     // Exécuté dans l'image legacy (Node 10, babel-node) : CommonJS.
-    files: ['tools/seed/legacy/presave-server.js'],
+    files: ['tools/seed/legacy/presave-server.js', 'tools/oracle/legacy/lib-oracle-server.js'],
     languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
   },
 );
