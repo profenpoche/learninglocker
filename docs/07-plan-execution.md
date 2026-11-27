@@ -289,8 +289,29 @@ Constats importants pour la suite :
 - **CI du fork xapi-service** : les GitHub Actions sont désactivées par défaut sur un fork ; à activer dans l'onglet Actions du dépôt.
 
 
-## 10. Prochaines actions
+## 10. Prochaines actions — reprise du lot 5 (API 2026)
 
-1. Toi : décisions D1 à D8 toutes tranchées le 26/11/2026. En option : la redirection de port vers la VM (§2) pour ouvrir l'interface legacy dans ton navigateur, et un instantané de la VM dans Boxes maintenant que la référence est produite.
-2. Moi : lot 5 (API 2026), validé par la référence golden.
-3. Ensuite : lot 4 (bibliothèque partagée, validée contre `pipelines.json`), puis lots 5 et 6.
+Point de reprise pour une nouvelle conversation. Lots 0 à 4 **faits** (jalons J1–J3). Lot 5 **en cours** : socle, authentification, filtres de droits et lectures REST portés et validés (voir §9 et `apps/api/README.md`). Tout le reste est relayé vers l'API legacy.
+
+**À lire d'abord :** ce document (§3 décisions, §9 avancement), `AGENTS.md` (règles, VM, pièges), `apps/api/README.md` (routes portées, relais, golden), `docs/03-api-auth.md` (inventaire des routes, formats d'erreur, scopes), `packages/shared` (code commun déjà porté : `parseQuery`, scopes, schémas, validation, pipelines — à réutiliser).
+
+**Méthode (inchangée) :** porter route par route, chaque tranche validée par la référence golden complète (les routes non encore portées restent relayées). Sur la VM, depuis `~/legacy` :
+```bash
+# construire l'image depuis une copie du dépôt (rsync sans node_modules) puis :
+export LEGACY_MONGO=4.4
+API_IMAGE=ll-api:<tag> DIFF_ARGS="--max 60" ./golden/record-legacy.sh
+# remettre ensuite : docker compose up -d mongo && ./golden/restore-legacy.sh
+```
+Critère de chaque tranche : `Identiques : 745 / 745` (ou N/745 + écarts **tous** listés dans `tools/golden/accepted.json` avec justification D7 ici).
+
+**Tranches restantes du lot 5 :**
+1. **Statements** : `GET /statements/aggregate`, `/statements/aggregateAsync` (mêmes clés de cache Redis que le legacy), `/v1/statements/aggregate`, métadonnées (`PATCH`/`POST /v2/statementmetadata/:id`), suppression par lots (`/v2/batchdelete/*`). Réutiliser `@ll/shared` (`parseQuery`, pipelines).
+2. **Écritures REST** des 21 modèles (`POST`/`PUT`/`PATCH`/`DELETE /v2/<modèle>[/:id]`), avec `@HttpCode(200)` sur les `POST` ; `preCreate`/`preUpdate`/`preDelete` par modèle (voir `docs/03` §2.8). Réutiliser `@ll/shared` (schémas `preSave`).
+3. **Personas** : routes spécifiques (`/v2/persona*`, `/v2/personaIdentifier*`, `/connection/persona*`, `/mergepersona`, `/uploadpersona`), réimplémentées sur `personas`/`personaIdentifiers`/`personaAttributes` (formats identiques). Réutiliser `@ll/shared` (validation IFI).
+4. **Imports/exports/uploads** : `/uploadlogo`, `/uploadpersonas`, `/importpersonas`, `/export`, `/downloadlogo`, `/organisation/:id/downloadexport/:id.csv`, `importpersonaserror`.
+5. **Divers et endpoints nouveaux** : `userOrganisations` et `organisationSettings`, `requestAppAccess`, flux Google OIDC complet, émission du token de dashboard partagé (logique de `legacy/ui/src/controllers/renderDashboard.js`), configuration publique.
+6. **Correctifs D7 restants** (après identité acquise) : voir la liste « anomalies à corriger » de `docs/06-migration-2026.md` §9 et la ligne du lot 5 au §9 ci-dessus ; chacun ajouté à `accepted.json` avec sa justification. Les détails correspondants restent hors du dépôt public.
+
+**Fin du lot 5 :** golden à 745/745 (hors écarts D7 acceptés), suite supertest verte, `apps/api/README.md` et la ligne « 5 » du §9 à jour. Ensuite **lot 6** (worker, scheduler, CLI : BullMQ, personas réintégrées, migrations 2026) puis **lot 7** (front Angular).
+
+**Rappels d'environnement :** la VM redémarre parfois (redirection SSH à remettre, cf. `AGENTS.md`) ; garder Boxes ouvert ; après tout golden, remettre la pile legacy sur MongoDB 4.2 (`docker compose up -d mongo && ./golden/restore-legacy.sh`). Ne jamais toucher à `~/legacy` pendant qu'un autre travail l'utilise.
