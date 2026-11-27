@@ -2,7 +2,8 @@
 // Compare deux enregistrements golden (référence legacy et candidat), cas par cas.
 //
 // Usage : node tools/golden/diff.mjs <référence> <candidat> [--only préfixe] [--max 50]
-//         [--accept fichier.json]  liste d'identifiants dont l'écart est accepté (anomalies corrigées, D7)
+//         [--accept fichier.json]  écarts acceptés (anomalies corrigées, D7) : tableau d'entrées
+//           "id" (tout le cas) ou { "id", "paths": ["/body/json/stack", …], "reason" } (seulement ces chemins)
 // Code de sortie : 0 si aucun écart non accepté, 1 sinon.
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,7 +19,20 @@ if (!refDir || !candDir) {
   console.error('Usage : diff.mjs <référence> <candidat> [--only préfixe] [--max n] [--accept fichier]');
   process.exit(2);
 }
-const accepted = new Set(acceptFile && existsSync(acceptFile) ? JSON.parse(readFileSync(acceptFile, 'utf8')) : []);
+const acceptEntries = acceptFile && existsSync(acceptFile) ? JSON.parse(readFileSync(acceptFile, 'utf8')) : [];
+// id → null (cas entier accepté) ou liste de chemins de la réponse dont l'écart est accepté
+const accepted = new Map(acceptEntries.map((e) => (typeof e === 'string' ? [e, null] : [e.id, e.paths ?? null])));
+const withoutPaths = (response, paths) => {
+  const copy = structuredClone(response);
+  for (const p of paths) {
+    const parts = p.split('/').filter(Boolean);
+    const last = parts.pop();
+    let node = copy;
+    for (const k of parts) node = node?.[k];
+    if (node && typeof node === 'object') delete node[last];
+  }
+  return copy;
+};
 const load = (dir) => new Map(readFileSync(join(dir, 'cases.ndjson'), 'utf8').split('\n').filter(Boolean)
   .map((l) => JSON.parse(l)).filter((c) => c.id.startsWith(only)).map((c) => [c.id, c]));
 const ref = load(refDir);
@@ -45,7 +59,10 @@ for (const [id, r] of ref) {
   if (!c) { missing.push(id); continue; }
   const d = diffs(r.response, c.response);
   if (!d.length) { same += 1; continue; }
-  if (accepted.has(id)) { acceptedCount += 1; continue; }
+  if (accepted.has(id)) {
+    const paths = accepted.get(id);
+    if (!paths || !diffs(withoutPaths(r.response, paths), withoutPaths(c.response, paths)).length) { acceptedCount += 1; continue; }
+  }
   differ += 1;
   const section = id.split('.').slice(0, 2).join('.');
   bySection[section] = (bySection[section] ?? 0) + 1;

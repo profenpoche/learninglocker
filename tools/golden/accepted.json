@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "rest.lrs.getUnknown",
+    "paths": [
+      "/body/json/stack"
+    ],
+    "reason": "Le legacy renvoie la pile d'appels interne (chemins /opt/ll/node_modules…) dans le corps de l'erreur : retirée (D7, fuite d'information)."
+  },
+  {
+    "id": "rest.lrs.getInvalidId",
+    "paths": [
+      "/body/json/stack",
+      "/body/json/reason/stack"
+    ],
+    "reason": "Le legacy renvoie la pile d'appels interne (chemins /opt/ll/node_modules…) dans le corps de l'erreur : retirée (D7, fuite d'information)."
+  },
+  {
+    "id": "rest.query.invalidJson",
+    "paths": [
+      "/body/json/stack"
+    ],
+    "reason": "Le legacy renvoie la pile d'appels interne (chemins /opt/ll/node_modules…) dans le corps de l'erreur : retirée (D7, fuite d'information)."
+  },
+  {
+    "id": "dashboard.token.otherDashboard",
+    "paths": [
+      "/body/json/stack"
+    ],
+    "reason": "Le legacy renvoie la pile d'appels interne (chemins /opt/ll/node_modules…) dans le corps de l'erreur : retirée (D7, fuite d'information)."
+  },
+  {
+    "id": "admin.visualisation.privateOfAnalyste",
+    "paths": [
+      "/body/json/stack"
+    ],
+    "reason": "Le legacy renvoie la pile d'appels interne (chemins /opt/ll/node_modules…) dans le corps de l'erreur : retirée (D7, fuite d'information)."
+  }
+]

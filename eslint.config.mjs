@@ -17,6 +17,15 @@ export default tseslint.config(
     },
   },
   {
+    // API NestJS : les options de Mongoose et de NestJS sont typées par des classes mais s'écrivent en
+    // objets littéraux ; les modules NestJS sont des classes vides décorées.
+    files: ['apps/api/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
+      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
+    },
+  },
+  {
     files: ['**/*.mjs', '**/*.js'],
     languageOptions: { globals: { ...globals.node } },
     rules: { 'no-unused-vars': ['error', { ignoreRestSiblings: true, argsIgnorePattern: '^_' }] },

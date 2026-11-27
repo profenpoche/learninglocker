@@ -1,0 +1,43 @@
+{
+  "name": "@ll/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "API HTTP de Learning Locker 2026 (NestJS sur Express 5), compatible avec l'API d'origine",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@ll/shared": "*",
+    "@nestjs/common": "^12.6.3",
+    "@nestjs/core": "^12.6.3",
+    "@nestjs/platform-express": "^12.6.3",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "finalhandler": "^2.1.0",
+    "html-to-text": "^10.0.1",
+    "ioredis": "^6.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.13.1",
+    "ms": "^2.1.3",
+    "nodemailer": "^10.6.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/finalhandler": "^1.2.4",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/ms": "^2.1.0",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.2"
+  }
+}

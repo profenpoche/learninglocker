@@ -1,0 +1,9 @@
+# Contexte de construction de apps/api/Dockerfile (racine du monorepo).
+**/node_modules
+**/dist
+**/coverage
+.git
+legacy
+docs
+tools
+deploy

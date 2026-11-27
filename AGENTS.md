@@ -12,7 +12,9 @@ données et de la configuration** avec les instances existantes.
 - `master` : code Learning Locker d'origine, **référence intacte**. On n'y développe pas.
 - `v2026` : tout le travail de migration. Monorepo npm :
   - `packages/shared` : code commun (formats de données, pipelines d'agrégation) ;
-  - `apps/` : API, worker, CLI, front Angular, ajoutés au fil des lots ;
+  - `apps/` : API, worker, CLI, front Angular, ajoutés au fil des lots :
+    - `apps/api` : API HTTP (NestJS 12, Express 5, Mongoose 9). Routes non portées relayées vers
+      l'API legacy si `LEGACY_API_URL` est défini. Structure et routes portées : `apps/api/README.md` ;
   - `legacy/` : copie du code d'origine, pour le lire pendant le portage. Ne jamais la modifier ;
     elle est exclue du lint, du typage et des tests. Les chemins cités dans `docs/` (`api/src/…`,
     `lib/…`, `ui/src/…`) se trouvent sous `legacy/` sur cette branche.
@@ -27,6 +29,7 @@ données et de la configuration** avec les instances existantes.
 | Plan, **décisions D1–D8 (tranchées)**, lots, avancement | `docs/07-plan-execution.md` (§3 et §9) |
 | Jeu de données de test | `tools/seed/README.md` |
 | Tests de contrat « golden » | `tools/golden/README.md` |
+| API 2026 : lancer, configurer, relais, routes portées | `apps/api/README.md` |
 | Oracles du lot 4 (code commun comparé au vrai code legacy) | `tools/oracle/pipelines.mjs` (pipelines de visualisation), `tools/oracle/libs.mjs` et `tools/oracle/legacy/lib-oracle-server.js` (parseQuery, scopes, validation, schémas du front, query builder) ; fixtures `packages/shared/test/fixtures/` |
 | Vérification de base avant/après migration | `tools/verify-db/` (`inventory.js`, `compare.mjs`) |
 | Pile legacy en conteneurs, provisionnement Ubuntu | `deploy/legacy/`, `deploy/provision.sh` |
@@ -37,7 +40,7 @@ Node 24 (`.nvmrc`), npm workspaces :
 
 ```bash
 npm ci
-npm run check        # tout ce que la CI vérifie : lint, typage, tests, syntaxe des outils
+npm run check        # tout ce que la CI vérifie : build de @ll/shared, lint, typage, tests, syntaxe des outils
 npm test             # Vitest, tous les paquets
 npm run build
 ```
@@ -56,6 +59,8 @@ CI : `.github/workflows/ci.yml` (GitHub Actions).
 - Ne pas commiter de données : instantanés, dumps, enregistrements golden (ils vivent sur la VM, voir plus bas). Exception : les fixtures de test compressées produites par un générateur versionné (ex. `packages/shared/test/fixtures/`, générées par `tools/oracle/`). Les secrets présents dans `deploy/legacy/*.env` sont des valeurs de test, jamais à réutiliser.
 - Code nouveau : TypeScript strict, tests Vitest à côté du code (`*.test.ts`). Chaque portage cite le
   fichier d'origine sous `legacy/` en commentaire d'en-tête.
+- Tests de l'API qui utilisent MongoDB : `MONGO_TEST_URL` (base `ll_test_*` obligatoire, garde-fou),
+  sautés sans cette variable. Sur la VM : conteneurs jetables `mongo:8.0` et `redis:7`, jamais la base legacy.
 - Outils `tools/` : JavaScript (ESM) exécuté sur la VM ou dans l'image legacy ; `npm run check:tools`
   en vérifie la syntaxe. Le code legacy (`legacy/`) se construit avec Node 10, uniquement en conteneur.
 
@@ -81,6 +86,10 @@ STATEMENTS=500 ./seed/launch-detached.sh  # passe courte (≈ 3 min) pour valide
 CHECK=1 ./golden/record-legacy.sh         # refait la référence golden et contrôle son déterminisme
 ./oracle/pipelines.sh                     # régénère l'oracle des pipelines (≈ 3 min, conteneur ll-presave-oracle sur 18091)
 ./oracle/libs.sh                          # régénère les autres oracles du lot 4 (≈ 1 min, conteneur ll-lib-oracle sur 18092, sans accès à la base)
+# Candidat API 2026 (≈ 4 min). Image construite sur la VM depuis une copie du dépôt (rsync sans node_modules) :
+#   docker build -f apps/api/Dockerfile -t ll-api:<tag> .
+LEGACY_MONGO=4.4 API_IMAGE=ll-api:<tag> DIFF_ARGS="--max 60" ./golden/record-legacy.sh
+# Puis remettre la pile legacy sur MongoDB 4.2 : docker compose up -d mongo && ./golden/restore-legacy.sh
 ```
 
 ## Pièges connus
@@ -91,4 +100,6 @@ CHECK=1 ./golden/record-legacy.sh         # refait la référence golden et cont
 - Le worker legacy traite 300 à 1 200 statements par minute (MongoDB est le goulot) et continue d'écrire quelques minutes après : attendre une base stable avant tout instantané.
 - Les routes legacy `/api/v2/<modèle>/:id/shallow` ne répondent jamais : toujours un délai maximal côté client.
 - Le code legacy s'exécute **transpilé par Babel 6** (preset `env`, `transform-runtime`) : `{...a, k: v}` y devient `Object.assign` (une clé `__proto__` change le prototype), `[...x]` devient `Array.from(x)` pour un non-tableau. Un portage « à l'identique » doit suivre cette sémantique, pas celle du source.
+- API 2026 : NestJS répond 201 par défaut à un `POST` ; chaque route `POST` portée porte `@HttpCode(200)` (le legacy répondait 200).
+- API 2026 : pas d'analyseur de corps global (le relais doit transmettre le corps intact) ; une route portée appelle `parseBody` elle-même.
 - `new Date(chaîne)`, `moment(chaîne)` et `moment.parseZone(chaîne)` lisent une date sans décalage dans le fuseau **local du processus** (UTC dans les conteneurs legacy, souvent autre chose sur l'hôte). Le code porté lit en UTC (`moment.utc`) ; lancer les tests avec plusieurs `TZ=` pour le vérifier.
