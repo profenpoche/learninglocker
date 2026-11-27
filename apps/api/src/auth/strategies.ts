@@ -76,7 +76,7 @@ export const immutableEquals = (a: unknown, b: unknown): boolean => {
   return typeof equalsA === 'function' && typeof equalsB === 'function' && Boolean((equalsA as (x: unknown) => unknown).call(valueA, valueB));
 };
 
-/** Valeur de requête interdite dans un filtre (objet : injection d'opérateurs MongoDB). Correctif D7. */
+/** Valeur interdite dans un filtre : une valeur non textuelle est rejetée (renforcement D7). */
 export const isQueryObject = (value: unknown): boolean => typeof value === 'object' && value !== null;
 
 export class Strategies {

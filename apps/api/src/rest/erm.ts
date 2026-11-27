@@ -4,9 +4,9 @@
 // operations,errorHandler,resource_filter}.js, legacy/lib/constants/auth.js (RESTIFY_DEFAULTS,
 // contextFilter), mongoose@5.8.1 lib/{query,utils}.js (merge des conditions et des projections).
 //
-// Correctif de sécurité (D7) : dans le legacy, une clé `$and` dans le paramètre `query` remplaçait
-// le filtre de droits (fusion « overwrite » de Mongoose 5) et donnait accès aux documents de toutes
-// les organisations. Ici, les deux `$and` sont concaténés ; tout le reste est fusionné comme avant.
+// Renforcement de sécurité (D7) : la fusion des conditions (comportement « overwrite » de Mongoose 5)
+// ne doit pas laisser une clé fournie par le client remplacer un filtre de droits. Les opérateurs
+// logiques sont donc concaténés ; tout le reste est fusionné comme avant.
 import { parseJsonLegacy } from '../http/legacy-json.js';
 
 /** Erreur au format erm (`statusCode`, `description`), renvoyée par onError avec ses propriétés propres. */
@@ -122,7 +122,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 /**
  * Query.prototype.merge (overwrite) de Mongoose 5.8, sauf pour les opérateurs logiques déjà présents
  * (`$and`, `$or`, `$nor`) : concaténés dans un `$and`, pour qu'aucune clé fournie par le client ne
- * remplace un filtre de droits (D7).
+ * remplace un filtre de droits (renforcement D7).
  */
 export const mergeConditions = (to: Record<string, unknown>, from: Record<string, unknown>): Record<string, unknown> => {
   for (const key of Object.keys(from)) {

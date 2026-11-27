@@ -94,7 +94,7 @@ describe.runIf(enabled)('lectures REST', () => {
       expect((res.body as { _id: string }[]).map((v) => v._id)).toEqual([String(IDS.publicViz)]);
     });
 
-    it('correctif D7 : un `$and` dans query ne contourne plus le filtre de droits', async () => {
+    it('renforcement D7 : une clé combinée dans query ne remplace pas le filtre de droits', async () => {
       const res = await asOrg('/v2/lrs/count').query({ query: '{"$and":[{}]}' }).expect(200);
       expect(res.body).toEqual({ count: 2 });
     });
